@@ -1,0 +1,71 @@
+pip install numpy scipy matplotlib obspy
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import stft, butter, filtfilt
+from obspy import read
+
+# Load seismic data (replace with actual data file paths)
+# Example for Moon data
+seismogram_moon = read("path_to_moon_seismic_data_file")
+signal_moon = seismogram_moon[0].data
+
+# Example for Mars data
+seismogram_mars = read("path_to_mars_seismic_data_file")
+signal_mars = seismogram_mars[0].data
+
+# Define a function to bandpass filter the signal
+def bandpass_filter(data, lowcut, highcut, fs, order=4):
+    nyquist = 0.5 * fs
+    low = lowcut / nyquist
+    high = highcut / nyquist
+    b, a = butter(order, [low, high], btype='band')
+    return filtfilt(b, a, data)
+
+# Apply bandpass filter
+sampling_rate = 100  # Adjust based on actual data
+filtered_signal_moon = bandpass_filter(signal_moon, 0.1, 20.0, sampling_rate)
+filtered_signal_mars = bandpass_filter(signal_mars, 0.1, 20.0, sampling_rate)
+
+# Compute STFT
+f_moon, t_moon, Zxx_moon = stft(filtered_signal_moon, fs=sampling_rate, nperseg=1024)
+f_mars, t_mars, Zxx_mars = stft(filtered_signal_mars, fs=sampling_rate, nperseg=1024)
+
+# Plot the results
+plt.figure(figsize=(14, 8))
+
+# Plot the filtered signal for Moon
+plt.subplot(2, 2, 1)
+plt.plot(np.arange(len(filtered_signal_moon)) / sampling_rate, filtered_signal_moon, label='Filtered Seismic Signal (Moon)', color='blue')
+plt.title('Filtered Seismic Signal (Moon)')
+plt.xlabel('Time (s)')
+plt.ylabel('Amplitude')
+plt.grid(True)
+plt.legend()
+
+# Plot the STFT magnitude for Moon
+plt.subplot(2, 2, 2)
+plt.pcolormesh(t_moon, f_moon, np.abs(Zxx_moon), shading='gouraud')
+plt.title('STFT Magnitude (Moon)')
+plt.xlabel('Time (s)')
+plt.ylabel('Frequency (Hz)')
+plt.colorbar(label='Magnitude')
+
+# Plot the filtered signal for Mars
+plt.subplot(2, 2, 3)
+plt.plot(np.arange(len(filtered_signal_mars)) / sampling_rate, filtered_signal_mars, label='Filtered Seismic Signal (Mars)', color='green')
+plt.title('Filtered Seismic Signal (Mars)')
+plt.xlabel('Time (s)')
+plt.ylabel('Amplitude')
+plt.grid(True)
+plt.legend()
+
+# Plot the STFT magnitude for Mars
+plt.subplot(2, 2, 4)
+plt.pcolormesh(t_mars, f_mars, np.abs(Zxx_mars), shading='gouraud')
+plt.title('STFT Magnitude (Mars)')
+plt.xlabel('Time (s)')
+plt.ylabel('Frequency (Hz)')
+plt.colorbar(label='Magnitude')
+
+plt.tight_layout()
+plt.show()
